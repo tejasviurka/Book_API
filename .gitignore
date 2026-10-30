@@ -33,5 +33,7 @@ build/
 .vscode/
 
 
+# H2 Database
 data/*.mv.db
 data/*.trace.db
+data/*.lock.db
