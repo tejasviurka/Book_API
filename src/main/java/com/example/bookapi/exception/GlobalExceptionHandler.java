@@ -1,5 +1,8 @@
 package com.example.bookapi.exception;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -16,10 +19,31 @@ import java.util.Map;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
+    private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
+
     // 404: book does not exist
     @ExceptionHandler(BookNotFoundException.class)
     public ResponseEntity<ErrorResponse> handleNotFound(BookNotFoundException ex) {
         return build(HttpStatus.NOT_FOUND, ex.getMessage(), null);
+    }
+
+    // 404: author does not exist
+    @ExceptionHandler(AuthorNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleAuthorNotFound(AuthorNotFoundException ex) {
+        return build(HttpStatus.NOT_FOUND, ex.getMessage(), null);
+    }
+
+    // 409: business rule broken (author still has books)
+    @ExceptionHandler(AuthorHasBooksException.class)
+    public ResponseEntity<ErrorResponse> handleAuthorHasBooks(AuthorHasBooksException ex) {
+        return build(HttpStatus.CONFLICT, ex.getMessage(), null);
+    }
+
+    // 409: the database itself rejected the data (foreign key, unique, not-null ...)
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<ErrorResponse> handleDataIntegrity(DataIntegrityViolationException ex) {
+        log.warn("Data integrity violation", ex);
+        return build(HttpStatus.CONFLICT, "The operation conflicts with existing data", null);
     }
 
     // 400: @Valid failed (blank title, too long, ...)
@@ -41,6 +65,14 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)
     public ResponseEntity<ErrorResponse> handleTypeMismatch(MethodArgumentTypeMismatchException ex) {
         return build(HttpStatus.BAD_REQUEST, "Invalid value for '" + ex.getName() + "'", null);
+    }
+
+    // 500: safety net for anything unexpected. Log the details, return a generic message.
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<ErrorResponse> handleUnexpected(Exception ex) {
+        log.error("Unexpected error", ex);
+        return build(HttpStatus.INTERNAL_SERVER_ERROR,
+                "Something went wrong. Please try again later.", null);
     }
 
     private ResponseEntity<ErrorResponse> build(HttpStatus status, String message,
