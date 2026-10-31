@@ -46,6 +46,12 @@ public class GlobalExceptionHandler {
         return build(HttpStatus.CONFLICT, "The operation conflicts with existing data", null);
     }
 
+    // 400: ?sort= used a field we do not allow
+    @ExceptionHandler(InvalidSortFieldException.class)
+    public ResponseEntity<ErrorResponse> handleInvalidSort(InvalidSortFieldException ex) {
+        return build(HttpStatus.BAD_REQUEST, ex.getMessage(), null);
+    }
+
     // 400: @Valid failed (blank title, too long, ...)
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ErrorResponse> handleValidation(MethodArgumentNotValidException ex) {
